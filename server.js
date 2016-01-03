@@ -15,49 +15,42 @@ app.get('/', function(req, res) {
 });
 
 app.get('/todos', function(req, res) {
-	var queryParams = req.query;
-	var filteredTodos = todos;
+	var query = req.query;
+	var where = {};
 
-	if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'true') {
-		filteredTodos = _.where(todos, {
-			completed: true
-		});
-	} else if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'false') {
-		filteredTodos = _.where(todos, {
-			completed: false
-		});
+	if (query.hasOwnProperty('completed') && query.completed === 'true') {
+		where.completed = true;
+	}	else if (query.hasOwnProperty('completed') && query.completed === 'false') {
+		where.completed = false;
 	}
 
-	if (queryParams.hasOwnProperty('q') && queryParams.q.length > 0) {
-		filteredTodos = _.filter(filteredTodos, function(todo) {
-			return todo.description.toLowerCase().indexOf(queryParams.q.toLowerCase()) > -1;
-		})
+	if (query.hasOwnProperty('q') && query.q.length > 0) {
+		where.description = {$like: '%' + query.q + '%'};
 	}
 
-	res.json(filteredTodos);
+	db.todo.findAll({where: where}).then(function (todos) {
+		if (!!todos) {
+			res.json(todos);
+		} else {
+			res.status(404).send('"message": "No matching item"');
+		}
+	}, function (e) {
+		res.status(500).send(e.toJSON());
+	});
 });
 
 app.get('/todos/:id', function(req, res) {
 	var todoId = parseInt(req.params.id, 10);
 
 	db.todo.findById(todoId).then(function (todo) {
-		if (todo) {
+		if (!!todo) {
 			res.json(todo.toJSON());
 		} else {
 			res.status(404).send('"message": "No matching item"');
 		}
 	}, function (e) {
-		res.status(404).send(e.toJSON());
+		res.status(500).send(e.toJSON());
 	});
-	// var matchedTodo = _.findWhere(todos, {
-	// 	id: todoId
-	// });
-
-	// if (matchedTodo) {
-	// 	res.json(matchedTodo);
-	// } else {
-	// 	res.status(404).send();
-	// }
 });
 
 app.post('/todos', function(req, res) {
@@ -75,18 +68,6 @@ app.post('/todos', function(req, res) {
 	}).catch(function (e) {
 		res.status(404).send(e.toJSON());
 	})
-
-	// body.description = body.description.trim();
-
-	// body.id = id;
-
-	// id++;
-
-	// todos.push(body);
-
-	// console.log('Description: ' + body.description);
-
-	// res.json(todos);
 });
 
 app.delete('/todos/:id', function(req, res) {

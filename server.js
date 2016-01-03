@@ -2,6 +2,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var _ = require('underscore');
 var db = require('./db.js');
+var bcrypt = require('bcrypt');
 
 var app = express();
 var PORT = process.env.PORT || 3000;
@@ -132,14 +133,25 @@ app.put('/todos/:id', function(req, res) {
 });
 
 // POST /users
-app.post('/users', function(req, res) {
+app.post('/users', function (req, res) {
 	var body = req.body;
 	body = _.pick(body, 'email', 'password');
 
 	db.user.create(body).then(function (user) {
 		res.json(user.toPublicJSON());
 	}, function (e) {
-		res.status(404).json(e);
+		res.status(400).json(e);
+	});
+});
+
+// POST/users/login
+app.post('/users/login', function (req, res) {
+	var body = _.pick(req.body, 'email', 'password');
+
+	db.user.authenticate(body).then(function (user) {
+		res.json(user.toPublicJSON());
+	}, function () {
+		res.status(401).send();
 	});
 });
 

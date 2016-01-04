@@ -5,7 +5,7 @@ var db = require('./db.js');
 var bcrypt = require('bcrypt');
 
 var app = express();
-var PORT = process.env.PORT || 3000;
+var PORT = process.env.PORT || 3001;
 var todos = [];
 var id = 1;
 
@@ -149,13 +149,19 @@ app.post('/users/login', function (req, res) {
 	var body = _.pick(req.body, 'email', 'password');
 
 	db.user.authenticate(body).then(function (user) {
-		res.json(user.toPublicJSON());
+		var token = user.generateToken('authentication');
+
+		if (token) {
+			res.header('Auth', token).json(user.toPublicJSON());
+		} else {
+			res.status(401).send();
+		}
 	}, function () {
 		res.status(401).send();
 	});
 });
 
-db.sequelize.sync().then(function () {
+db.sequelize.sync({force: true}).then(function () {
 	app.listen(PORT, function() {
 		console.log('Express server started, listening on port ' + PORT + '...');
 	});

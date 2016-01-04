@@ -44,7 +44,7 @@ module.exports = function (sequelize, DataTypes) {
 		},
 		classMethods: {
 			authenticate: function (body) {
-				return new Promise(function (resolve, reject) {
+				return new Promise (function (resolve, reject) {
 					if (typeof body.email !=='string' || typeof body.password !== 'string') {
 						return reject();
 					}
@@ -63,6 +63,28 @@ module.exports = function (sequelize, DataTypes) {
 						reject();
 					});
 				}); 
+			},
+			findByToken: function (token) {
+				return new Promise (function (resolve, reject) {
+					try {
+						var decodedJWT = jwt.verify(token, 'qwerty098');
+						var bytes = cryptojs.AES.decrypt(decodedJWT.token, 'abc123$001');
+						var tokenData = JSON.parse(bytes.toString(cryptojs.enc.Utf8));
+console.log('tokenData');
+						user.findById(tokenData.id).then(function (user) {
+							if (user) {
+								resolve(user);
+							} else {
+								reject();
+							}
+						}, function (e) {
+							reject();
+						});
+					} catch (e) {
+						console.log(e);
+						reject();
+					}
+				});
 			}
 		},
 		instanceMethods: {
